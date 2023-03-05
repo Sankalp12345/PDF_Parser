@@ -16,6 +16,7 @@ dictMonth={
     "nov":"11",
     "dec":"12",
 }
+lstSectionHeaders=["work experience","experience","education","certifications"]
 lstDesignation=["developer","engineer","programmer","executive","intern","senior","software",
 "junior","assistant","leader","member","manager","team","project","administrator","analyst",
 "scientist","consultant","president","vice","support","coordinator","founder","co-founder","owner",
@@ -27,4 +28,5 @@ lstDesignation=["developer","engineer","programmer","executive","intern","senior
 "build","ci","cd","ci/cd","cicd","security","cybersecurity","cyber","professional","auditor","audit",
 "datacenter","center","app","ios","android","java","python","physicist","program","marketing","seo",
 "sem","engg","technology","evangelist","strategist","lead","jr", "sr","vp","avp","full","stack",
-"journalist","director"]
+"journalist","director","clerk","accountant","accounting","trainee","producer","operative","administrative",
+"nurse","nursing","paramedic","medical","practitioner","machinist","machine","machining","expert"]

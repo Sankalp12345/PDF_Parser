@@ -15,15 +15,15 @@ class Logger:
         if self.Level==0 or self.Level==iLevel:
             fileHandle=open(self.LogPath,"a",encoding='utf-8')
             if strLabel!="":
-                fileHandle.write(strLabel + "\n")
-                fileHandle.write("==================================================" + "\n")
-            else:
-                fileHandle.write("\n")
+                fileHandle.write("\n"+strLabel)
+                fileHandle.write("\n ==================================================")
+            # else:
+            #     fileHandle.write("\n")
             
             if oObject!=None: 
-                fileHandle.write(str(oObject))
-                fileHandle.write("\n ==================================================" + "\n")
-            fileHandle.write("\n")
+                fileHandle.write("\n"+str(oObject))
+                fileHandle.write("\n ==================================================")
+            # fileHandle.write("\n")
             fileHandle.close()
 
     def SetLog(self, strLabel,iLevel):
