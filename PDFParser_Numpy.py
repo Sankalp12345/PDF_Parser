@@ -9,9 +9,14 @@ import json
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextContainer, LTChar, LTRect, LTCurve
 import numpy as np
+import math
 
-ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Product Manager/"
-ResumeFile="Abhijit_Tadke_APM_Paddle_Lift.pdf"
+ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Unclassified/"
+# ResumeFile="Abhijit_Tadke_APM_Paddle_Lift.pdf"
+# ResumeFile="Swarnima Bhosale.pdf"
+# ResumeFile="Thomas-Sears.pdf"
+# ResumeFile="Vignesh TM APM (1).pdf"
+ResumeFile="Nihal_Satam.pdf"
 # SubjectResume = fm.ReadFile(ResumePath,ResumeFile)
 
 oLog=log.Logger("D:/Users/Sankalp/Documents/Work/MyLearning/Python/PDF_Parser/DebugLog/Debug.log",0)
@@ -24,12 +29,29 @@ lstDocStyle=[]
 def FindHeaders(Resume):
     lstHeaderStyles=[]
     Section=""
+    TotalPages=0
     for page_layout in extract_pages(Resume):
+        TotalPages=TotalPages+1
+    
+    DocLength=TotalPages
+
+    for page_layout in extract_pages(Resume):
+        PageHeight=page_layout.y1
+        TotalPages=TotalPages-1
+        Offset=TotalPages*PageHeight
+        oLog.SetLogObj("",10,str(page_layout))
         for element in page_layout:
+            # print("element = "+ str(element))
+            oLog.SetLogObj("Element:",10,str(element))
             if isinstance(element, LTTextContainer):
+                # print("element.get_text = "+ str(element.get_text()))
+                oLog.SetLogObj("Element:",10,str(element.get_text()))
                 for text_line in element:
                     Section="-"
                     strText=ln.CleanText(element.get_text()).lower().strip()
+                    print("strText : " + strText)
+                    if strText.__contains__("achievements"):
+                        print("Chalo Debug Chaalu!!!")
                     if strText in enum.lstSectionHeaders:
                         Section="IMP"
                     for character in text_line:
@@ -46,16 +68,24 @@ def FindHeaders(Resume):
                             else:
                                 lstHeaderStyles.append([character.fontname,character.size,1,Section])
         # oLog.SetLogObj("",1,lmgr.Convert2DListToCSV(lstHeaderStyles))
-        lstHeaderStyles=lmgr.SortList(lstHeaderStyles,1,True)
-        i=1
-        for eachRow in lstHeaderStyles:
-            eachRow.append(str(i))
-            i=i+1
+    lstHeaderStyles=lmgr.SortList(lstHeaderStyles,1,True)
+    i=1
+    for eachRow in lstHeaderStyles:
+        eachRow.append(str(i))
+        i=i+1
 
-        oLog.SetLogObj("",1,lmgr.Convert2DListToCSV(lstHeaderStyles))
-        return lstHeaderStyles
+    oLog.SetLogObj("",1,lmgr.Convert2DListToCSV(lstHeaderStyles))
+    return lstHeaderStyles
 
-
+def renderResume(lstLayout):
+    for eachSection in lstDocStyle:
+        oLog.SetLogObj("Final Rendition Section:",1,str(eachSection[0]))
+        lstNodes=eachSection[5]
+        lstNodes=sorted(lstNodes, key=lambda x: (x[1],-x[0]),reverse=True)
+        for eachNode in lstNodes:
+            # oLog.SetLogObj("Final RawNode:",1,str(eachNode))
+            oLog.SetLogObj("",1,str(eachNode[6]))
+    
 
 def CleanEmptyNodes(lstLayout):
     lstLayoutWorkingCopy=lstLayout
@@ -103,11 +133,11 @@ def TransferChildNode(lstLayout,TextNode,FromSeq,ToSeq):
     return lstLayout
 
 
-def CreateTextNodes(element,iSeq):
+def CreateTextNodes(element,iSeq,Offset):
     HLeft=element.x0
-    VBottom=element.y0
+    VBottom=element.y0 + Offset
     HRight=element.x1
-    VTop=element.y1
+    VTop=element.y1 + Offset
     
     lstTextNodes=[]
     for text_line in element:
@@ -128,18 +158,25 @@ def CreateTextNodes(element,iSeq):
                     prevSize=character.size
                     fullString=character.get_text()
         if fullString!="":
+            # print("fullString="+fullString)
+            # print("Size="+str(prevSize)+" Font="+str(prevFont))
             HeaderType=[x for x in lstStyles if x[1]==prevSize and x[0]==prevFont]
-            # print("New: "+str(HeaderType[0][4]))
-            lstTextNode=[HLeft,VBottom,HRight,VTop,prevFont,prevSize,fullString,HeaderType[0][4],HeaderType[0][3],iSeq]
-            lstTextNodes.append(lstTextNode)
+            if len(HeaderType)==0:
+                HeaderType=[x for x in lstStyles if x[1]==math.ceil(prevSize) and x[0]==prevFont]
+                if len(HeaderType)==0:
+                    HeaderType=[x for x in lstStyles if x[1]==math.floor(prevSize) and x[0]==prevFont]
+            # print("New: "+str(HeaderType))
+            if len(HeaderType)>0:
+                lstTextNode=[HLeft,VBottom,HRight,VTop,prevFont,prevSize,fullString,HeaderType[0][4],HeaderType[0][3],iSeq]
+                lstTextNodes.append(lstTextNode)
 
     return lstTextNodes
 
-def SetElementInSection(element,lstLayout):
+def SetElementInSection(element,lstLayout,Offset):
     HLeft=element.x0
-    VBottom=element.y0
+    VBottom=element.y0 + Offset
     HRight=element.x1
-    VTop=element.y1
+    VTop=element.y1 + Offset
     lMargin=HLeft-10
     RMargin=HLeft+10
     
@@ -165,7 +202,7 @@ def SetElementInSection(element,lstLayout):
         # if lstSection[0][4]>VTop:
         #     VTop=lstSection[0][4]
 
-        lstTextNodes=CreateTextNodes(element,lstSection[0][0])
+        lstTextNodes=CreateTextNodes(element,lstSection[0][0],Offset)
         if len(lstTextNodes)>0:
             lstCurrenttextNodes=lstSection[0][5]
             for eachText in lstTextNodes:
@@ -175,7 +212,7 @@ def SetElementInSection(element,lstLayout):
         lstLayout.append(lstSection[0])
     else:
         seq=len(lstLayout)
-        lstTextNodes=CreateTextNodes(element,seq+1)
+        lstTextNodes=CreateTextNodes(element,seq+1,Offset)
         lstSection=[seq+1,HLeft,VBottom,HRight,VTop,lstTextNodes]
         lstLayout.append(lstSection)
 
@@ -184,11 +221,19 @@ def SetElementInSection(element,lstLayout):
 def GetSectionLayout(Resume):
     SectionSeq=0
     lstLayout=[]
+    TotalPages=0
     for page_layout in extract_pages(ResumePath+ResumeFile):
+        TotalPages=TotalPages+1
+    
+    DocLength=TotalPages
+
+    for page_layout in extract_pages(ResumePath+ResumeFile):
+        TotalPages=TotalPages-1
+        Offset=TotalPages*page_layout.y1
         for element in page_layout:
             if isinstance(element, LTTextContainer):
                 # oLog.SetLogObj("",1,element)
-                lstLayout=SetElementInSection(element,lstLayout)
+                lstLayout=SetElementInSection(element,lstLayout,Offset)
     
     lstLayout=lmgr.SortList(lstLayout,0,False)
     for eachRow in lstLayout:
@@ -211,7 +256,7 @@ def GetHeaderlessSections(lstLayout):
             if eachNode[8]=="IMP":
                 hasHead=True
                 oLog.SetLogObj("eachNode[8]:",9,eachNode)
-        print("hasHead="+str(hasHead))
+        # print("hasHead="+str(hasHead))
         if not hasHead:
             lstHeaderless.append(eachSection[0])
             oLog.SetLogObj("eachSection[0]:",9,eachSection[0])
@@ -244,11 +289,11 @@ def RefineSectionLayout(lstLayout):
                 EligibleSections=[x for x in lstLayout if x[1]<=eachNode[0] and x[3]>=eachNode[0] and x[2]<=eachNode[1] and x[4]>=eachNode[1] and x[0]!=eachNode[9] and x[0] not in lstHeaderless]
                 oLog.SetLogObj("EligibleSections: ",1,str(EligibleSections))
                 if len(EligibleSections)==1:
-                    print(EligibleSections[0][0])
+                    # print(EligibleSections[0][0])
                     lstTransferChildMap=[eachNode,eachNode[9],EligibleSections[0][0]]
                     lstTransferNodes.append(lstTransferChildMap)
                 elif len(EligibleSections)>1:
-                    print("Almost " + str(len(EligibleSections)) + " eligible sections for " + str(eachNode))
+                    # print("Almost " + str(len(EligibleSections)) + " eligible sections for " + str(eachNode))
                     oLog.SetLogObj("More than 1>",1,str(EligibleSections))
 
     oLog.SetLogObj("lstTransferNodes",6,str(lstTransferNodes))
@@ -285,3 +330,5 @@ for eachSection in lstDocStyle:
     for eachNode in eachSection[5]:
         oLog.SetLogObj("RawNode:",1,str(eachNode))
         oLog.SetLogObj("Node:",1,str(eachNode[6]))
+
+renderResume(lstDocStyle)
