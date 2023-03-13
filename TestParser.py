@@ -1,8 +1,8 @@
 from pdfminer.high_level import extract_pages
 import pdfminer
 from pdfminer.layout import LTTextContainer
-ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Product Manager/"
-ResumeFile="Swarnima Bhosale.pdf"
+ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Unclassified/"
+ResumeFile="Nihal_Satam.pdf"
 path=ResumePath+ResumeFile
 def Parse(path):
     TotalPages=0
@@ -15,11 +15,12 @@ def Parse(path):
         TotalPages=TotalPages-1
         Offset=TotalPages*page_layout.y1
         for element in page_layout:
+            print(element)
             if isinstance(element, LTTextContainer):
                 print(element.get_text())
-                print("left="+str(element.x0) + " bottom=" + str(element.y0) + " right=" + str(element.x1) + " top="+str(element.y1))
+                # print("left="+str(element.x0) + " bottom=" + str(element.y0) + " right=" + str(element.x1) + " top="+str(element.y1))
 
-                print("left="+str(element.x0) + " bottom=" + str(element.y0 + Offset) + " right=" + str(element.x1) + " top="+str(element.y1 + Offset))
+                # print("left="+str(element.x0) + " bottom=" + str(element.y0 + Offset) + " right=" + str(element.x1) + " top="+str(element.y1 + Offset))
     print(TotalPages)
 
 Parse(path)

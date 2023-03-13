@@ -1,0 +1,30 @@
+Dates 
+jan 2021
+january 2021
+jan 21
+january 21
+jan of 21
+feb 21 to jun 21
+january 21 to august 21
+jan-2021
+january-2021
+jan-21
+january-21
+jan of 21
+feb-21 to jun-21
+january-21 to august-21
+01 2002
+03 2001 to 06 2002
+01-2002
+03-2001 to 06-2002
+01/2002
+03/2001 to 06/2002
+01\2002
+03\2001 to 06\2002
+
+IsName
+IsCompany
+IsDesignation
+IsDate
+IsUniverity
+IsDegree

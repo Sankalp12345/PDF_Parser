@@ -11,12 +11,15 @@ from pdfminer.layout import LTTextContainer, LTChar, LTRect, LTCurve
 import numpy as np
 import math
 
-ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Unclassified/"
-# ResumeFile="Abhijit_Tadke_APM_Paddle_Lift.pdf"
+# ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Unclassified/"
+ResumePath="D:/Users/Sankalp/Documents/Work/MyLearning/Python/Parser/AI_ML_TrainTest_DataSet/Product Manager/"
+ResumeFile="Abhijit_Tadke_APM_Paddle_Lift.pdf"
 # ResumeFile="Swarnima Bhosale.pdf"
 # ResumeFile="Thomas-Sears.pdf"
 # ResumeFile="Vignesh TM APM (1).pdf"
-ResumeFile="Nihal_Satam.pdf"
+# ResumeFile="Nihal_Satam.pdf"
+# ResumeFile="Aditya_Mishra.pdf"
+# ResumeFile="Smit_Vora.pdf"
 # SubjectResume = fm.ReadFile(ResumePath,ResumeFile)
 
 oLog=log.Logger("D:/Users/Sankalp/Documents/Work/MyLearning/Python/PDF_Parser/DebugLog/Debug.log",0)
@@ -49,24 +52,23 @@ def FindHeaders(Resume):
                 for text_line in element:
                     Section="-"
                     strText=ln.CleanText(element.get_text()).lower().strip()
-                    print("strText : " + strText)
-                    if strText.__contains__("achievements"):
-                        print("Chalo Debug Chaalu!!!")
-                    if strText in enum.lstSectionHeaders:
-                        Section="IMP"
-                    for character in text_line:
-                        if isinstance(character, LTChar):
-                            lstFind=[]
-                            lstFind=[x for x in lstHeaderStyles if x[0]==character.fontname and x[1]==character.size]
-                            
-                            if len(lstFind)>0:
-                                lstHeaderStyles.remove(lstFind[0])
-                                lstFind[0][2]=int(lstFind[0][2])+1
-                                if Section=="IMP":
-                                    lstFind[0][3]=Section
-                                lstHeaderStyles.append(lstFind[0])
-                            else:
-                                lstHeaderStyles.append([character.fontname,character.size,1,Section])
+                    # print("strText : " + strText)
+                    if strText!="":
+                        if strText in enum.lstSectionHeaders:
+                            Section="IMP"
+                        for character in text_line:
+                            if isinstance(character, LTChar):
+                                lstFind=[]
+                                lstFind=[x for x in lstHeaderStyles if x[0]==character.fontname and x[1]==character.size]
+                                
+                                if len(lstFind)>0:
+                                    lstHeaderStyles.remove(lstFind[0])
+                                    lstFind[0][2]=int(lstFind[0][2])+1
+                                    if Section=="IMP":
+                                        lstFind[0][3]=Section
+                                    lstHeaderStyles.append(lstFind[0])
+                                else:
+                                    lstHeaderStyles.append([character.fontname,character.size,1,Section])
         # oLog.SetLogObj("",1,lmgr.Convert2DListToCSV(lstHeaderStyles))
     lstHeaderStyles=lmgr.SortList(lstHeaderStyles,1,True)
     i=1
@@ -78,6 +80,7 @@ def FindHeaders(Resume):
     return lstHeaderStyles
 
 def renderResume(lstLayout):
+    ResumeText=""
     for eachSection in lstDocStyle:
         oLog.SetLogObj("Final Rendition Section:",1,str(eachSection[0]))
         lstNodes=eachSection[5]
@@ -85,7 +88,58 @@ def renderResume(lstLayout):
         for eachNode in lstNodes:
             # oLog.SetLogObj("Final RawNode:",1,str(eachNode))
             oLog.SetLogObj("",1,str(eachNode[6]))
-    
+            if eachNode[8]=="IMP":
+                SectionName=""
+                if str(eachNode[6]).lower().strip() in enum.lstSectionExp:
+                    SectionName="EXP"
+                elif str(eachNode[6]).lower().strip() in enum.lstSectionEdu:
+                    SectionName="EDU"
+                elif str(eachNode[6]).lower().strip() in enum.lstSectionSkills:
+                    SectionName="SKL"
+
+                ResumeText = ResumeText + "HEADER:" + SectionName + ": " + str(eachNode[6]) + "\n"
+                # print(eachNode[8])
+            else:
+                ResumeText = ResumeText + str(eachNode[6]) + "\n"
+    fm.SaveNewFile(ResumePath,ResumeText,ResumeFile.replace(".pdf",".txt"))
+
+def ExtractEntities(ResumePath,ResumeFile):
+    txtResume=fm.ReadFile(ResumePath,ResumeFile)
+    lstResume=txtResume.split("\n")
+    lstWorkEx=[]
+    lstEdu=[]
+    iSeqWorkEx=0
+    WorkExStart=False
+    EduStart=False
+    WorkExText=""
+    EduText=""
+    for eachLine in lstResume:
+        if eachLine.startswith("HEADER:"):
+            if eachLine.startswith("HEADER:EXP:"):
+                WorkExStart=True
+                EduStart=False
+            elif eachLine.startswith("HEADER:EDU:"):
+                EduStart=True
+                WorkExStart=False
+            else:
+                WorkExStart=False
+                EduStart=False
+
+        if WorkExStart:
+            iSeqWorkEx=iSeqWorkEx+1
+            WorkExText=eachLine.lower().strip()
+            lstWorkExItem=[iSeqWorkEx,WorkExText]
+            lstWorkEx.append(lstWorkExItem)
+        if EduStart:
+            iSeqEdu=iSeqWorkEx+1
+            EduText=eachLine.lower().strip()
+            lstEduItem=[iSeqEdu,EduText]
+            lstEdu.append(lstEduItem)
+    print("EXPERIENCE: " + str(lstWorkEx))
+    print("EDUCATION: " + str(lstEdu))
+    oLog.SetLogObj("EXPERIENCE: ",1,str(lstWorkEx))
+    oLog.SetLogObj("EDUCATION: ",1,str(lstEdu))
+
 
 def CleanEmptyNodes(lstLayout):
     lstLayoutWorkingCopy=lstLayout
@@ -144,19 +198,23 @@ def CreateTextNodes(element,iSeq,Offset):
         prevFont=""
         prevSize=""
         fullString=""
-        for character in text_line:
-            if isinstance(character, LTChar):
-                if prevFont==character.fontname and prevSize==character.size:
-                    fullString=fullString + character.get_text()
-                else:
-                    if fullString!="":
-                        HeaderType=[x for x in lstStyles if x[1]==prevSize and x[0]==prevFont]
-                        # print(HeaderType[0][4])
-                        lstTextNode=[HLeft,VBottom,HRight,VTop,prevFont,prevSize,fullString,HeaderType[0][4],HeaderType[0][3],iSeq]
-                        lstTextNodes.append(lstTextNode)
-                    prevFont=character.fontname
-                    prevSize=character.size
-                    fullString=character.get_text()
+        if text_line!="":
+            try:
+                for character in text_line:
+                    if isinstance(character, LTChar):
+                        if prevFont==character.fontname and prevSize==character.size:
+                            fullString=fullString + character.get_text()
+                        else:
+                            if fullString!="":
+                                HeaderType=[x for x in lstStyles if x[1]==prevSize and x[0]==prevFont]
+                                # print(HeaderType[0][4])
+                                lstTextNode=[HLeft,VBottom,HRight,VTop,prevFont,prevSize,fullString,HeaderType[0][4],HeaderType[0][3],iSeq]
+                                lstTextNodes.append(lstTextNode)
+                            prevFont=character.fontname
+                            prevSize=character.size
+                            fullString=character.get_text()
+            except Exception as e:
+                print("CreateTextNodes: Error Suppressed:" + str(e))
         if fullString!="":
             # print("fullString="+fullString)
             # print("Size="+str(prevSize)+" Font="+str(prevFont))
@@ -262,6 +320,9 @@ def GetHeaderlessSections(lstLayout):
             oLog.SetLogObj("eachSection[0]:",9,eachSection[0])
     return lstHeaderless
 
+def FindOrphanedNodes(lstLayout):
+    pass
+
 def RefineSectionLayout(lstLayout):
     # print(lstLayout)
     lstHeaderless=[]
@@ -306,6 +367,133 @@ def RefineSectionLayout(lstLayout):
                     
                 # EligibleSections.remove()
 
+def ContainsDate(lstWords):
+    i=0
+    Result=False
+    lstWords=ln.CleanText(lstWords).strip().lower()
+    lstWords=lstWords.split(" ")
+
+    for eachWord in lstWords:
+        eachWord1=ln.CleanText(eachWord.strip().lower())
+
+        if eachWord1 in enum.lstMonthNames:
+            Result=True
+            break
+        if eachWord1.isnumeric():
+            if len(eachWord1)==4:
+                Result=True
+                break
+            if len(eachWord1)==2:
+                if i>1:
+                    if lstWords[i-1].isnumeric() and (len(lstWords[i-1])==4 or len(lstWords[i-1])==2):
+                        Result=True
+                        break
+                if i<len(lstWords)-1:
+                    eachWord2=ln.CleanText(lstWords[i+1]).strip().lower()
+                    if eachWord2.isnumeric() and (len(eachWord2)==4 or len(eachWord2)==2):
+                        Result=True
+                        break
+
+        i=i+1
+    return Result
+
+def ContainsCompany(lstWords):
+    i=0
+    Result=False
+    lstWords=lstWords.split(" ")
+    
+    for eachWord in lstWords:
+        eachWord1=eachWord.strip().lower()
+        if eachWord1 in enum.lstCompanyName:
+            Result=True
+            break
+
+    for eachWord in lstWords:
+        eachWord1=ln.CleanText(eachWord).strip().lower()
+        if eachWord1 in enum.lstCompanyName:
+            Result=True
+            break
+    return Result
+
+def ContainsUniversity(lstWords):
+    i=0
+    Result=False
+    lstWords=lstWords.split(" ")
+    for eachWord in lstWords:
+        eachWord1=eachWord.strip().lower()
+        if eachWord1 in enum.lstEducationalEntities:
+            Result=True
+            break
+
+    for eachWord in lstWords:
+        eachWord1=ln.CleanText(eachWord).strip().lower()
+        if eachWord1 in enum.lstEducationalEntities:
+            Result=True
+            break
+    return Result
+
+def ContainsDegree(lstWords):
+    i=0
+    Result=False
+    lstWords=lstWords.split(" ")
+    for eachWord in lstWords:
+        eachWord1=eachWord.strip().lower()
+        if eachWord1 in enum.lstDegrees:
+            Result=True
+            break
+    for eachWord in lstWords:
+        eachWord1=ln.CleanText(eachWord).strip().lower()
+        if eachWord1 in enum.lstDegrees:
+            Result=True
+            break
+    return Result
+
+def ContainsDesignation(lstWords):
+    i=0
+    Result=False
+    lstWords=lstWords.split(" ")
+    for eachWord in lstWords:
+        eachWord1=eachWord.strip().lower()
+        if eachWord1 in enum.lstDesignation:
+            if i<len(lstWords)-1:
+                eachWord2=ln.CleanText(lstWords[i+1]).strip().lower()
+                if eachWord2 in enum.lstDesignation:
+                    Result=True
+                    break
+        i=i+1
+    return Result
+
+
+def ExtractNamedEntities(ResumePath,ResumeFile):
+    Resume=fm.ReadFile(ResumePath,ResumeFile)
+    lstResumeBase=[]
+    i=1
+    lstResume=Resume.split("\n")
+    for eachSentence in lstResume:
+        HasName=False
+        HasCompany=False
+        HasDesignation=False
+        HasDate=False
+        HasUniversity=False
+        HasDegree=False
+        if ContainsDate(eachSentence):
+            HasDate=True
+        if ContainsCompany(eachSentence):
+            HasCompany=True
+        if ContainsUniversity(eachSentence):
+            HasUniversity=True
+        if ContainsDegree(eachSentence):
+            HasDegree=True
+        if ContainsDesignation(eachSentence):
+            HasDesignation=True
+    
+        lstSentence=[i,eachSentence,HasName,HasCompany,HasDesignation,HasDate,HasUniversity,HasDegree]
+
+        lstResumeBase.append(lstSentence)
+        i=i+1
+    # print(lstResumeBase)
+    oLog.SetLogObj("NER",15,lmgr.Convert2DListToCSV(lstResumeBase))
+
 Resume=ResumePath+ResumeFile
 lstStyles=FindHeaders(Resume)
 lstDocStyle=GetSectionLayout(Resume)
@@ -332,3 +520,7 @@ for eachSection in lstDocStyle:
         oLog.SetLogObj("Node:",1,str(eachNode[6]))
 
 renderResume(lstDocStyle)
+
+ExtractEntities(ResumePath,ResumeFile.replace(".pdf",".txt"))
+
+ExtractNamedEntities(ResumePath,ResumeFile.replace(".pdf",".txt"))
